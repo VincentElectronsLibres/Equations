@@ -144,6 +144,11 @@
             background: #2e5fc0;
         }
 
+        .btn-solve:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+
         .btn-clear {
             background: #f5f5f5;
             color: #222;
@@ -186,26 +191,6 @@
                 opacity: 1;
                 transform: translateY(0);
             }
-        }
-
-        .method-section {
-            background: #e8f4fd;
-            padding: 1rem;
-            border-radius: 6px;
-            border-left: 3px solid #4a90e2;
-            margin-bottom: 1.5rem;
-        }
-
-        .method-section h3 {
-            color: #1565c0;
-            margin-bottom: 0.75rem;
-            font-size: 1rem;
-        }
-
-        .method-section p {
-            color: #333;
-            font-size: 0.95rem;
-            line-height: 1.6;
         }
 
         .step {
@@ -373,7 +358,7 @@
         <header>
             <div class="logo">🔢 Révisions CE1D</div>
             <h1>Résoudre des Équations</h1>
-            <p>Tape ton équation et je te montre COMMENT la résoudre, pas juste la réponse</p>
+            <p>Tape ton équation et je te montre COMMENT la résoudre pas à pas</p>
         </header>
 
         <div class="card">
@@ -395,7 +380,7 @@
             </div>
 
             <div class="button-group">
-                <button class="btn-solve" onclick="solveEquation()">✨ Résoudre & Apprendre</button>
+                <button class="btn-solve" id="solveBtn" onclick="solveEquation()">✨ Résoudre & Apprendre</button>
                 <button class="btn-clear" onclick="clearAll()">🗑️ Effacer</button>
             </div>
         </div>
@@ -422,6 +407,81 @@
     </footer>
 
     <script>
+        // Algorithme RAPIDE : résolution algébrique
+        function solveLinearEquation(equation) {
+            // Parser : "ax + b = cx + d"
+            // Résultat : x = (d - b) / (a - c)
+            
+            const parts = equation.split('=');
+            const left = parts[0].trim();
+            const right = parts[1].trim();
+
+            try {
+                // Coefficient de x et constant du côté gauche
+                const [a, b] = extractCoefficients(left);
+                // Coefficient de x et constant du côté droit
+                const [c, d] = extractCoefficients(right);
+
+                // ax + b = cx + d
+                // ax - cx = d - b
+                // (a - c)x = d - b
+                // x = (d - b) / (a - c)
+
+                const coeff = a - c;
+                const constant = d - b;
+
+                if (Math.abs(coeff) < 0.0001) {
+                    return null; // Pas de solution unique
+                }
+
+                const x = constant / coeff;
+                return Math.round(x * 10000) / 10000; // Arrondir à 4 décimales
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function extractCoefficients(expr) {
+            // Remplacer les - par +- pour split
+            expr = expr.replace(/\s+/g, '');
+            expr = expr.replace(/^-/, '(-1)*');
+            expr = expr.replace(/([+\-*\/])-/g, '$1(-1)*');
+
+            // Parser l'expression pour trouver ax + b
+            let coeffX = 0;
+            let constant = 0;
+
+            // Remplir les termes
+            const terms = expr.split('+').filter(t => t);
+
+            terms.forEach(term => {
+                if (term.includes('x') || term.includes('X')) {
+                    // Terme avec x
+                    const coeff = term.replace(/[xX]/g, '').trim();
+                    if (coeff === '' || coeff === '+') {
+                        coeffX += 1;
+                    } else if (coeff === '-') {
+                        coeffX -= 1;
+                    } else {
+                        try {
+                            coeffX += eval(coeff);
+                        } catch {
+                            return null;
+                        }
+                    }
+                } else {
+                    // Terme constant
+                    try {
+                        constant += eval(term);
+                    } catch {
+                        return null;
+                    }
+                }
+            });
+
+            return [coeffX, constant];
+        }
+
         function setExample(equation) {
             document.getElementById('equation').value = equation;
             solveEquation();
@@ -438,78 +498,50 @@
             const input = document.getElementById('equation').value.trim();
             const errorDiv = document.getElementById('error');
             const solutionDiv = document.getElementById('solution');
+            const solveBtn = document.getElementById('solveBtn');
             
             if (!input) {
                 showError('Veuillez entrer une équation !');
                 return;
             }
 
-            try {
-                const parts = input.split('=');
-                if (parts.length !== 2) {
-                    throw new Error('L\'équation doit contenir un seul signe = (par exemple: 2*x + 3 = 7)');
-                }
+            // Désactiver le bouton
+            solveBtn.disabled = true;
+            solveBtn.textContent = '⏳ Calcul en cours...';
 
-                const leftSide = parts[0].trim();
-                const rightSide = parts[1].trim();
+            try {
+                if (!input.includes('=')) {
+                    throw new Error('L\'équation doit contenir un signe = (par exemple: 2*x + 3 = 7)');
+                }
 
                 if (!input.toLowerCase().includes('x')) {
                     throw new Error('L\'équation doit contenir la variable x');
                 }
 
-                const solution = findSolution(leftSide, rightSide);
+                const solution = solveLinearEquation(input);
                 
                 if (solution === null) {
                     throw new Error('Cette équation n\'a pas de solution unique.');
                 }
 
-                displayDetailedSolution(leftSide, rightSide, solution);
+                const parts = input.split('=');
+                displayDetailedSolution(parts[0].trim(), parts[1].trim(), solution);
                 errorDiv.classList.remove('show');
                 solutionDiv.classList.add('show');
 
             } catch (error) {
                 showError(error.message);
                 solutionDiv.classList.remove('show');
+            } finally {
+                solveBtn.disabled = false;
+                solveBtn.textContent = '✨ Résoudre & Apprendre';
             }
-        }
-
-        function findSolution(leftStr, rightStr) {
-            const createFunc = (str) => {
-                return (x) => {
-                    let expr = str.replace(/(\d)\s*\(/g, '$1*(');
-                    expr = expr.replace(/\)\s*\(/g, ')*(');
-                    expr = expr.replace(/x/gi, `(${x})`);
-                    try {
-                        return Function('"use strict"; return (' + expr + ')')();
-                    } catch {
-                        return NaN;
-                    }
-                };
-            };
-
-            const leftFunc = createFunc(leftStr);
-            const rightFunc = createFunc(rightStr);
-
-            for (let x = -10000; x <= 10000; x += 0.01) {
-                const leftVal = leftFunc(x);
-                const rightVal = rightFunc(x);
-                
-                if (Math.abs(leftVal - rightVal) < 0.001) {
-                    const rounded = Math.round(x * 100) / 100;
-                    if (Math.abs(leftFunc(rounded) - rightFunc(rounded)) < 0.01) {
-                        return rounded;
-                    }
-                }
-            }
-
-            return null;
         }
 
         function displayDetailedSolution(leftStr, rightStr, solution) {
             const stepsDiv = document.getElementById('steps');
             let html = '';
 
-            // Étape 1: L'équation de départ
             html += `
                 <div class="step">
                     <h3><span class="step-number">1</span>Équation de départ</h3>
@@ -520,38 +552,35 @@
                 </div>
             `;
 
-            // Étape 2: Stratégie
             html += `
                 <div class="step">
                     <h3><span class="step-number">2</span>Notre Stratégie 🎯</h3>
                     <div class="step-content">
                         <p><strong>L'idée :</strong> Isoler x d'un côté du signe égal et les nombres de l'autre.</p>
-                        <p class="reason">💡 Pourquoi ? Parce qu'on veut trouver à quoi x est égal !</p>
-                        <p style="margin-top: 0.75rem;"><strong>Les étapes :</strong></p>
-                        <ol style="margin-left: 1.5rem; color: #666;">
-                            <li>Développer les parenthèses si besoin</li>
-                            <li>Passer tous les x d'un côté</li>
-                            <li>Passer tous les nombres de l'autre</li>
-                            <li>Simplifier</li>
+                        <p class="reason">💡 Pourquoi ? Parce qu'on veut découvrir à quoi x est égal !</p>
+                        <p style="margin-top: 0.75rem;"><strong>Les étapes clés :</strong></p>
+                        <ol style="margin-left: 1.5rem; color: #666; font-size: 0.9rem;">
+                            <li>Développer les parenthèses</li>
+                            <li>Regrouper tous les x d'un côté</li>
+                            <li>Passer les nombres de l'autre côté</li>
+                            <li>Isoler x (diviser par son coefficient)</li>
                             <li>Vérifier la réponse</li>
                         </ol>
                     </div>
                 </div>
             `;
 
-            // Étape 3: Solution trouvée
             html += `
                 <div class="step">
                     <h3><span class="step-number">3</span>La Solution 🎉</h3>
                     <div class="step-content">
                         <p>En appliquant notre stratégie, on trouve :</p>
                         <div class="equation-box" style="background: #e8f4fd;"><strong>x = ${solution}</strong></div>
-                        <p class="explanation">✨ C'est la valeur qui rend l'équation vraie !</p>
+                        <p class="explanation">✨ C'est la valeur qui rend l'équation VRAIE !</p>
                     </div>
                 </div>
             `;
 
-            // Étape 4: Vérification
             const leftVal = evaluateExpression(leftStr, solution);
             const rightVal = evaluateExpression(rightStr, solution);
             
@@ -559,13 +588,13 @@
                 <div class="step">
                     <h3><span class="step-number">4</span>Vérification 🔍</h3>
                     <div class="step-content">
-                        <p><strong>On remplace x par ${solution} dans l'équation :</strong></p>
+                        <p><strong>On remplace x par ${solution} :</strong></p>
                         <div class="verification">
                             <h3>Côté gauche :</h3>
-                            <p><code>${leftStr.replace(/x/gi, solution)}</code> = <strong>${leftVal.toFixed(4)}</strong></p>
+                            <p>${leftStr.replace(/x/gi, solution)} = <strong>${leftVal.toFixed(4)}</strong></p>
                             <h3 style="margin-top: 0.75rem;">Côté droit :</h3>
-                            <p><code>${rightStr.replace(/x/gi, solution)}</code> = <strong>${rightVal.toFixed(4)}</strong></p>
-                            <p style="margin-top: 0.75rem; font-weight: bold; color: #4a90e2;">✅ Les deux côtés sont égaux !<br>La réponse est correcte ! 🎊</p>
+                            <p>${rightStr.replace(/x/gi, solution)} = <strong>${rightVal.toFixed(4)}</strong></p>
+                            <p style="margin-top: 0.75rem; font-weight: bold; color: #4a90e2;">✅ Les deux côtés sont égaux !<br>La réponse est 100% correcte ! 🎊</p>
                         </div>
                     </div>
                 </div>
