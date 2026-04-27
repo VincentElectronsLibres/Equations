@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solveur d'Équations - Résolution Pas à Pas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .input-section {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e7ff;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 0.75rem 2rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-box p {
+            color: #4a5568;
+            line-height: 1.6;
+        }
+
+        .steps-container {
+            margin-top: 2rem;
+        }
+
+        .step {
+            background: #f9fafb;
+            border-left: 4px solid #667eea;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            margin-right: 1rem;
+            font-weight: bold;
+        }
+
+        .step-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .step-content {
+            margin-top: 1rem;
+            padding-left: 48px;
+        }
+
+        .equation {
+            background: white;
+            padding: 1rem;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            margin: 0.75rem 0;
+            border: 1px solid #e0e7ff;
+            word-break: break-all;
+        }
+
+        .explanation {
+            color: #4a5568;
+            font-size: 0.95rem;
+            margin-top: 0.75rem;
+            line-height: 1.6;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .result-box h2 {
+            margin-bottom: 1rem;
+        }
+
+        .result-equation {
+            font-family: 'Courier New', monospace;
+            font-size: 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .result-check {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            margin-top: 1rem;
+        }
+
+        .error-box {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 2rem;
+        }
+
+        .error-box h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .example-btn {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .example-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .input-section {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .result-equation {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧮 Solveur d'Équations</h1>
+            <p class="subtitle">Résout pas à pas, avec explications détaillées</p>
+        </header>
+
+        <div class="card">
+            <div class="input-section">
+                <input 
+                    type="text" 
+                    id="equationInput" 
+                    placeholder="Exemple: 2x + 3 = 7  ou  2(x+3) = -8"
+                    autocomplete="off"
+                >
+                <button onclick="solveEquation()">Résoudre</button>
+            </div>
+
+            <div class="info-box">
+                <h3>💡 Comment taper une équation ?</h3>
+                <p>
+                    <strong>Utilise :</strong> x pour l'inconnue, + - * / pour les opérations, ( ) pour les parenthèses<br>
+                    <strong>Exemples :</strong> 2x + 3 = 7 | 2(x+3) = -8 | x/2 - 1 = 3 | 3x - 11 = 15 + 17x
+                </p>
+            </div>
+
+            <div>
+                <h3>📚 Essaye ces exemples :</h3>
+                <div class="examples">
+                    <button class="example-btn" onclick="setExample('2(x + 3) = -8')">2(x + 3) = -8</button>
+                    <button class="example-btn" onclick="setExample('4x - 11 = 15 + 17x')">4x - 11 = 15 + 17x</button>
+                    <button class="example-btn" onclick="setExample('2x/3 - 1 = 3')">2x/3 - 1 = 3</button>
+                    <button class="example-btn" onclick="setExample('3(x - 4) + 2 = 6')">3(x - 4) + 2 = 6</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsContainer"></div>
+    </div>
+
+    <script>
+        function setExample(equation) {
+            document.getElementById('equationInput').value = equation;
+            solveEquation();
+        }
+
+        function solveEquation() {
+            const input = document.getElementById('equationInput').value.trim();
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            if (!input) {
+                resultsContainer.innerHTML = '<div class="card error-box"><h3>⚠️ Erreur</h3><p>Veuillez entrer une équation.</p></div>';
+                return;
+            }
+
+            // Parser l'équation
+            const parts = input.split('=');
+            if (parts.length !== 2) {
+                resultsContainer.innerHTML = '<div class="card error-box"><h3>⚠️ Erreur</h3><p>Une équation doit contenir un seul signe "="</p></div>';
+                return;
+            }
+
+            try {
+                const left = parts[0].trim();
+                const right = parts[1].trim();
+                
+                const result = solveLinearEquation(left, right);
+                displayResult(input, result, resultsContainer);
+            } catch (error) {
+                resultsContainer.innerHTML = `<div class="card error-box"><h3>⚠️ Erreur</h3><p>${error.message}</p></div>`;
+            }
+        }
+
+        function solveLinearEquation(leftStr, rightStr) {
+            const steps = [];
+
+            // Étape 0: Afficher l'équation initiale
+            steps.push({
+                title: "Équation initiale",
+                content: `${leftStr} = ${rightStr}`,
+                explanation: "C'est l'équation que nous devons résoudre. Notre objectif : isoler x d'un côté."
+            });
+
+            try {
+                // Convertir les expressions en forme ax + b
+                const left = parseExpression(leftStr);
+                const right = parseExpression(rightStr);
+
+                steps.push({
+                    title: "Forme simplifiée",
+                    content: `(${left.a})x + (${left.b}) = (${right.a})x + (${right.b})`,
+                    explanation: "Nous avons simplifié chaque côté en forme ax + b"
+                });
+
+                // Déplacer tous les x à gauche
+                let aLeft = left.a;
+                let bLeft = left.b;
+                let aRight = right.a;
+                let bRight = right.b;
+
+                if (aRight !== 0) {
+                    steps.push({
+                        title: "Déplacer les x à gauche",
+                        content: `(${aLeft})x - (${aRight})x + (${bLeft}) = (${bRight})`,
+                        explanation: `Soustrayons ${aRight}x des deux côtés pour regrouper les x`
+                    });
+
+                    aLeft -= aRight;
+                    aRight = 0;
+
+                    steps.push({
+                        title: "Simplifier",
+                        content: `(${aLeft})x + (${bLeft}) = (${bRight})`,
+                        explanation: "Nous avons combiné les termes en x"
+                    });
+                }
+
+                // Déplacer les constantes à droite
+                if (bLeft !== 0) {
+                    steps.push({
+                        title: "Déplacer les constantes à droite",
+                        content: `(${aLeft})x = (${bRight}) - (${bLeft})`,
+                        explanation: `Soustrayons ${bLeft} des deux côtés pour isoler le terme en x`
+                    });
+
+                    bRight -= bLeft;
+                    bLeft = 0;
+
+                    steps.push({
+                        title: "Simplifier",
+                        content: `(${aLeft})x = (${bRight})`,
+                        explanation: "Nous avons simplifié le côté droit"
+                    });
+                }
+
+                // Diviser par le coefficient de x
+                if (aLeft === 0) {
+                    if (bRight === 0) {
+                        return {
+                            type: "infinite",
+                            steps: steps,
+                            message: "L'équation a une infinité de solutions (tous les nombres réels)"
+                        };
+                    } else {
+                        return {
+                            type: "impossible",
+                            steps: steps,
+                            message: "L'équation n'a pas de solution (contradiction)"
+                        };
+                    }
+                }
+
+                steps.push({
+                    title: "Diviser par le coefficient",
+                    content: `x = (${bRight}) / (${aLeft})`,
+                    explanation: `Divisons les deux côtés par ${aLeft} pour isoler complètement x`
+                });
+
+                const solution = bRight / aLeft;
+
+                // Vérifier la solution
+                const leftValue = left.a * solution + left.b;
+                const rightValue = right.a * solution + right.b;
+                const isCorrect = Math.abs(leftValue - rightValue) < 0.0001;
+
+                steps.push({
+                    title: "Vérification",
+                    content: `Côté gauche : ${leftValue.toFixed(4)} | Côté droit : ${rightValue.toFixed(4)}`,
+                    explanation: `Nous avons remplacé x par ${solution.toFixed(4)} dans l'équation originale. Les deux côtés sont égaux, donc notre solution est correcte ! ✓`
+                });
+
+                return {
+                    type: "solution",
+                    steps: steps,
+                    solution: solution
+                };
+
+            } catch (error) {
+                throw new Error("Format d'équation non reconnu. Vérifiez la syntaxe.");
+            }
+        }
+
+        function parseExpression(expr) {
+            expr = expr.replace(/\s+/g, '').replace(/−/g, '-');
+
+            // Développer les parenthèses simples : a(bx+c) = abx + ac
+            expr = expandParentheses(expr);
+
+            // Séparer les termes en x et les constantes
+            let aCoeff = 0; // coefficient de x
+            let bCoeff = 0; // constante
+
+            const terms = expr.match(/[+-]?[^+-]+/g) || [];
+
+            terms.forEach(term => {
+                if (term.includes('x')) {
+                    const coeff = term.replace('x', '').trim();
+                    aCoeff += parseFloat(coeff === '' || coeff === '+' ? '1' : coeff === '-' ? '-1' : coeff);
+                } else {
+                    bCoeff += parseFloat(term);
+                }
+            });
+
+            return { a: aCoeff, b: bCoeff };
+        }
+
+        function expandParentheses(expr) {
+            // Développer a(bx+c) => abx+ac
+            return expr.replace(/(\d+)\(([^)]+)\)/g, (match, num, inside) => {
+                const factor = parseFloat(num);
+                const expanded = inside.split(/(?=[+-])/).map(term => {
+                    const t = term.trim();
+                    const coeff = parseFloat(t.replace('x', '').trim() || '1');
+                    return (coeff * factor) + (t.includes('x') ? 'x' : '');
+                }).join('+').replace(/\+\+/g, '+').replace(/^\+/, '');
+                return expanded;
+            });
+        }
+
+        function displayResult(input, result, container) {
+            let html = '<div class="card"><h2>📊 Résolution</h2>';
+
+            // Afficher les étapes
+            html += '<div class="steps-container">';
+            result.steps.forEach((step, index) => {
+                html += `
+                    <div class="step">
+                        <span class="step-number">${index + 1}</span>
+                        <span class="step-title">${step.title}</span>
+                        <div class="step-content">
+                            <div class="equation">${step.content}</div>
+                            <div class="explanation">💡 ${step.explanation}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            html += '</div>';
+
+            // Afficher le résultat final
+            if (result.type === "solution") {
+                const solution = result.solution;
+                const displaySolution = Number.isInteger(solution) ? solution : solution.toFixed(2);
+                
+                html += `
+                    <div class="card result-box">
+                        <h2>✅ Solution trouvée !</h2>
+                        <div class="result-equation">x = ${displaySolution}</div>
+                        <p>${result.steps[result.steps.length - 1].explanation}</p>
+                    </div>
+                `;
+            } else if (result.type === "infinite") {
+                html += `
+                    <div class="card result-box">
+                        <h2>♾️ Infinité de solutions</h2>
+                        <p>${result.message}</p>
+                    </div>
+                `;
+            } else if (result.type === "impossible") {
+                html += `
+                    <div class="card error-box">
+                        <h2>❌ Pas de solution</h2>
+                        <p>${result.message}</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Permettre la résolution en appuyant sur Entrée
+        document.getElementById('equationInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                solveEquation();
+            }
+        });
+    </script>
+</body>
+</html>
